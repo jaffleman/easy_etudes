@@ -26,5 +26,6 @@ public class Docx extends Fichier{
             e.printStackTrace();
         }
         return text;
+
     }
 }
