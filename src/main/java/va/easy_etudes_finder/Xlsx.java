@@ -35,22 +35,20 @@ public class Xlsx extends Fichier {
         if (feuille==null){
             feuille = wb.createSheet(result_sheet);
             Row row0 = feuille.createRow(0);
-            // EmpNo
+            feuille.addMergedRegion(new CellRangeAddress(0, 0, 0, 1 ));
+                        
             Cell cell = row0.createCell(0, CellType.STRING);
             cell.setCellValue("SEARCH RESULTS:");
-            feuille.addMergedRegion(new CellRangeAddress(
-                0, //first row (0-based)
-                0, //last row  (0-based)
-                0, //first column (0-based)
-                3  //last column  (0-based)
-            ));
-            // cell.setCellStyle(style);
-            // EmpName
+            cell.setCellStyle(CelluleStyle.TitleStyle(wb));
+            
+            short height = 500;
+            row0.setHeight(height);
+            
             Row row1 = feuille.createRow(1);
             cell = row1.createCell(0, CellType.STRING);
             cell.setCellValue("Variables list:");
             // cell.setCellStyle(style);
-            cell = row1.createCell(3, CellType.STRING);
+            cell = row1.createCell(1, CellType.STRING);
             cell.setCellValue("found Etudes:");
             // cell.setCellStyle(style);
             for (int i = 2; i <= varables.size()+1; i++ ) {
@@ -58,8 +56,11 @@ public class Xlsx extends Fichier {
                 cell = row1.createCell(0, CellType.STRING);
                 cell.setCellValue(varables.get(i-2));
             }
+            feuille.autoSizeColumn(0);
+            feuille.autoSizeColumn(1);
             writeFlux();
-        } 
+        } else {
+        }
     }
 
     public Xlsx(String filePath, String fileName, String sheetName, int variableColumn, int rColumn) {
@@ -133,8 +134,9 @@ public class Xlsx extends Fichier {
             if(row.getRowNum()>1){
                 Cell cell = row.getCell(newSheetForResults?0:variableColumn);
                 if (cell.getStringCellValue().equals(variable)) {
-                    Cell cell2 = row.createCell(newSheetForResults?3:resultColumn);
+                    Cell cell2 = row.createCell(newSheetForResults?1:resultColumn);
                     if(docStringList.length()>2) cell2.setCellValue(docStringList.substring(0,docStringList.length()-1));
+                    feuille.autoSizeColumn(1);
                     writeFlux(); 
                     return;
                 }
