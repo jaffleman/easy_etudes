@@ -18,9 +18,7 @@ public class Converter {
         }
         for (int i=0; i<splitLettre.length; i++) {
             result += (Math.pow(base,i))*(charList.indexOf(splitLettre[i])+1);
-            System.out.println((Math.pow(base,i))*(charList.indexOf(splitLettre[i])+1));
         }
-        System.out.println(result);
         return result-1;
     }
 }

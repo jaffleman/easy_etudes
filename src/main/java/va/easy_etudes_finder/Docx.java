@@ -26,6 +26,10 @@ public class Docx extends Fichier{
             e.printStackTrace();
         }
         return text;
-
+    }
+    public String getshortName(){
+        String[] splitName = this.name.split("_");
+        String unParseName = splitName[splitName.length-1];
+        return unParseName.substring(0, unParseName.length()-5);
     }
 }
