@@ -10,6 +10,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -36,7 +37,13 @@ public class Xlsx extends Fichier {
             Row row0 = feuille.createRow(0);
             // EmpNo
             Cell cell = row0.createCell(0, CellType.STRING);
-            cell.setCellValue("Shearch result:");
+            cell.setCellValue("SEARCH RESULTS:");
+            feuille.addMergedRegion(new CellRangeAddress(
+                0, //first row (0-based)
+                0, //last row  (0-based)
+                0, //first column (0-based)
+                3  //last column  (0-based)
+            ));
             // cell.setCellStyle(style);
             // EmpName
             Row row1 = feuille.createRow(1);
@@ -127,7 +134,7 @@ public class Xlsx extends Fichier {
                 Cell cell = row.getCell(newSheetForResults?0:variableColumn);
                 if (cell.getStringCellValue().equals(variable)) {
                     Cell cell2 = row.createCell(newSheetForResults?3:resultColumn);
-                    cell2.setCellValue(docStringList.substring(docStringList.length()-1));
+                    if(docStringList.length()>2) cell2.setCellValue(docStringList.substring(0,docStringList.length()-1));
                     writeFlux(); 
                     return;
                 }
