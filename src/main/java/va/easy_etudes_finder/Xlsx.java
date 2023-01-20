@@ -21,45 +21,46 @@ public class Xlsx extends Fichier {
     private int resultColumn;
     private XSSFWorkbook wb;
     private boolean newSheetForResults=false;
+    private int variableSeize;
+    private List<String> varables;
 
-    public Xlsx(String filePath, String fileName, String sheetName, int variableColumn) {
-        // new sheet
-        super();
-        this.newSheetForResults=true;
-        super.name = fileName;
-        super.path = filePath;  
-        this.sheetName = sheetName;
-        this.variableColumn = variableColumn; 
-        List<String> varables = this.getVariables();
-        XSSFSheet feuille = wb.getSheet(result_sheet);
-        if (feuille==null){
-            feuille = wb.createSheet(result_sheet);
-            Row row0 = feuille.createRow(0);
-            feuille.addMergedRegion(new CellRangeAddress(0, 0, 0, 1 ));
-                        
-            Cell cell = row0.createCell(0, CellType.STRING);
-            cell.setCellValue("SEARCH RESULTS:");
-            cell.setCellStyle(CelluleStyle.TitleStyle(wb));
-            
-            short height = 500;
-            row0.setHeight(height);
-            
-            Row row1 = feuille.createRow(1);
-            cell = row1.createCell(0, CellType.STRING);
-            cell.setCellValue("Variables list:");
-            // cell.setCellStyle(style);
-            cell = row1.createCell(1, CellType.STRING);
-            cell.setCellValue("found Etudes:");
-            // cell.setCellStyle(style);
-            for (int i = 2; i <= varables.size()+1; i++ ) {
-                row1 = feuille.createRow(i);
+    public Xlsx(OperatingData initData){
+        super.name = initData.getExcelFileName();
+        super.path = initData.getPatn();  
+        this.sheetName = initData.getSheetName();
+        this.variableColumn = initData.getVariableColumnNumber(); 
+        this.resultColumn = initData.getResultColumnNuber();
+        varables = this.initVariables();
+        if (this.resultColumn==-1){
+            this.newSheetForResults=true;
+            XSSFSheet feuille = wb.getSheet(result_sheet);
+            if (feuille==null){
+                feuille = wb.createSheet(result_sheet);
+                Row row0 = feuille.createRow(0);
+                feuille.addMergedRegion(new CellRangeAddress(0, 0, 0, 1 ));
+                            
+                Cell cell = row0.createCell(0, CellType.STRING);
+                cell.setCellValue("SEARCH RESULTS:");
+                cell.setCellStyle(CelluleStyle.TitleStyle(wb));
+                
+                short height = 500;
+                row0.setHeight(height);
+                
+                Row row1 = feuille.createRow(1);
                 cell = row1.createCell(0, CellType.STRING);
-                cell.setCellValue(varables.get(i-2));
+                cell.setCellValue("Variables list:");
+                // cell.setCellStyle(style);
+                cell = row1.createCell(1, CellType.STRING);
+                cell.setCellValue("found Etudes:");
+                // cell.setCellStyle(style);
+                for (int i = 2; i <= varables.size()+1; i++ ) {
+                    row1 = feuille.createRow(i);
+                    cell = row1.createCell(0, CellType.STRING);
+                    cell.setCellValue(varables.get(i-2));
+                }
+                writeFlux();
+            } else {
             }
-            feuille.autoSizeColumn(0);
-            feuille.autoSizeColumn(1);
-            writeFlux();
-        } else {
         }
     }
 
@@ -70,7 +71,7 @@ public class Xlsx extends Fichier {
         super.path = filePath;  
         this.sheetName = sheetName;
         this.variableColumn = variableColumn; 
-        this.resultColumn = rColumn;
+        varables = this.initVariables();
         
         // initReadFlux();
         // XSSFSheet feuille = wb.getSheet(sheetName);
@@ -107,40 +108,60 @@ public class Xlsx extends Fichier {
             e.printStackTrace();
         }
     }
-
+    
+    public int getSeize(){
+        return this.variableSeize;
+    }
     public List <String> getVariables(){
+        return varables;
+    }
+    public List <String> initVariables(){
+        System.out.print(".");
         initReadFlux();
         List <String> listDeVariables = new ArrayList<String>() ;
-        XSSFSheet feuille = wb.getSheet(sheetName);
+        XSSFSheet feuille = wb.getSheet(this.sheetName);
         FormulaEvaluator formulaEvaluator = wb.getCreationHelper().createFormulaEvaluator();
         for (Row ligne : feuille) {//parcourir les lignes
-            System.out.print("-");
-            for (Cell cell : ligne) {//parcourir les colonnes
-                System.out.print("-");
-                //if( cell.getAddress()!= CellAddress.A1);
-                //évaluer le type de la variableColumne
-                System.out.print("-");
-                boolean isString = formulaEvaluator.evaluateInCell(cell).getCellType()==CellType.STRING?true:false;
-                boolean isRequireIndex = cell.getColumnIndex()== variableColumn? true:false;
-                if(isString && isRequireIndex) listDeVariables.add(cell.getStringCellValue());
+            System.out.print(".");
+            //boolean isVisible = !ligne.getZeroHeight();
+            Cell cell = ligne.getCell(variableColumn);
+            
+            if (cell!=null&&//isVisible&&
+                formulaEvaluator.evaluateInCell(cell).getCellType()==CellType.STRING
+            ) {
+                String cellValue = cell.getStringCellValue();
+                if( 
+                    !cell.getStringCellValue().equals("Debut")&&
+                    !cell.getStringCellValue().equals("DEBUT")&&
+                    !cell.getStringCellValue().equals("debut")&&
+                    !cell.getStringCellValue().equals("FIN")&&
+                    !cell.getStringCellValue().equals("Fin")&&
+                    !cell.getStringCellValue().equals("fin")&&
+                    !cell.getStringCellValue().equals("SUBTY")
+                ) listDeVariables.add(cellValue);
             }
         }
+        this.variableSeize = listDeVariables.size();
+        formulaEvaluator.clearAllCachedResultValues();
         return listDeVariables;
     }    
-    public void saveDatatoSheet(String variable, String docStringList){
+    public void saveDatatoSheet(List <String[]> datatList){
         initReadFlux();
         XSSFSheet feuille = wb.getSheet(newSheetForResults?result_sheet:sheetName);
+        for(String[] data : datatList){
         for (Row row : feuille) {
-            if(row.getRowNum()>1){
+            if((newSheetForResults && row.getRowNum()>1) || !newSheetForResults){
                 Cell cell = row.getCell(newSheetForResults?0:variableColumn);
-                if (cell.getStringCellValue().equals(variable)) {
-                    Cell cell2 = row.createCell(newSheetForResults?1:resultColumn);
-                    if(docStringList.length()>2) cell2.setCellValue(docStringList.substring(0,docStringList.length()-1));
-                    feuille.autoSizeColumn(1);
-                    writeFlux(); 
-                    return;
+                if (cell != null){
+                    if (cell.getStringCellValue().equals(data[0])) {
+                        Cell cell2 = row.createCell(newSheetForResults?1:resultColumn);
+                        if(data[1].length()>2) cell2.setCellValue(data[1].substring(0,data[1].length()-1));
+                        System.out.print(".");
+                        break;
+                    }
                 }
             }
-        }
+        }}
+        writeFlux(); 
     }
 }
