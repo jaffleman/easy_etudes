@@ -53,6 +53,7 @@ public class App {
         List <String[]> variablesDocStringList = new ArrayList<>();
         List<String[]> listOfV = excelFile.getCodeZoneList();
         for (String[] variables:listOfV) {// Pour chaque lignes de variables
+            System.out.print(".");
             String codeZone = variables[0];
             String segment = variables[1];
             String sousSegment = variables[2];
@@ -60,7 +61,6 @@ public class App {
             for(Docx docx : docTab){ //pour chaque docx
                 String text = docx.getText();
                 
-                System.out.print(".");
                 
                 if (find(codeZone, text)){
                     if (

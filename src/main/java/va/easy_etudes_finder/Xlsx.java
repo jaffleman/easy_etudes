@@ -18,7 +18,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class Xlsx extends Fichier {
     private final String RESULT_SHEET = "result_sheet";
     private String sheetName = "";
-    private int variableColumn;
     private int resultColumn;
     private XSSFWorkbook wb;
     private boolean newSheetForResults=false;
@@ -42,6 +41,7 @@ public class Xlsx extends Fichier {
         XSSFSheet sheet = wb.getSheet(this.sheetName);
         boolean isFound = false;
         for (Row row : sheet) {
+            System.out.print(".");
             for (Cell cell : row){
                 this.codeZoneRowIndex = cell.getRowIndex();
                 if (cell.getStringCellValue().equals("Segment")){
@@ -85,8 +85,11 @@ public class Xlsx extends Fichier {
                 cell = row1.createCell(2, CellType.STRING);
                 cell.setCellValue("Variables list:");
 
-                // cell.setCellStyle(style);
                 cell = row1.createCell(3, CellType.STRING);
+                cell.setCellValue("Code rubrique HRA:");
+
+                // cell.setCellStyle(style);
+                cell = row1.createCell(4, CellType.STRING);
                 cell.setCellValue("found Etudes:");
                 // cell.setCellStyle(style);
                 List <String[]> myCodeZoneList = getCodeZoneList();
@@ -99,6 +102,8 @@ public class Xlsx extends Fichier {
                     cell.setCellValue(myCodeZoneList.get(i-2)[2]);
                     cell = row1.createCell(2, CellType.STRING);
                     cell.setCellValue(myCodeZoneList.get(i-2)[0]);
+                    cell = row1.createCell(3, CellType.STRING);
+                    cell.setCellValue(myCodeZoneList.get(i-2)[3]);
                 }
                 writeFlux();
             }
@@ -166,7 +171,7 @@ public class Xlsx extends Fichier {
                 Cell cell = row.getCell(this.newSheetForResults?2:codeZoneColumnIndex);
                 if (cell != null){
                     if (cell.getStringCellValue().equals(data[0])) {
-                        Cell cell2 = row.createCell(newSheetForResults?3:resultColumn);
+                        Cell cell2 = row.createCell(newSheetForResults?4:resultColumn);
                         String dataToCell = data[1].length()>2?data[1].substring(0,data[1].length()-1):"";
                         if(data[1].length()>2) cell2.setCellValue(dataToCell);
                         break;
