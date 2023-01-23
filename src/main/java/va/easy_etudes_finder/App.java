@@ -51,26 +51,51 @@ public class App {
         }
         System.out.println("\nStart seaching variables...");
         List <String[]> variablesDocStringList = new ArrayList<>();
-        int i =0;
-        List<String> listOfV = excelFile.getVariables();
-        for (String variable:listOfV) {// Pour chaque variables
-            i++;
-            //System.out.println("\nsearching : "+variable+"    "+i+"/"+listOfV.size());
+        List<String[]> listOfV = excelFile.getCodeZoneList();
+        for (String[] variables:listOfV) {// Pour chaque lignes de variables
+            String codeZone = variables[0];
+            String segment = variables[1];
+            String sousSegment = variables[2];
             String docStringList = "";
             for(Docx docx : docTab){ //pour chaque docx
+                String text = docx.getText();
+                
                 System.out.print(".");
-                final Pattern p = Pattern.compile(variable);
-                Matcher m = p.matcher(docx.getText());
-                if (m.find()) docStringList += docx.getshortName()+";";
+                
+                if (find(codeZone, text)){
+                    if (
+                        codeZone.equals("Debut")||
+                        codeZone.equals("Fin")||
+                        codeZone.equals("SUBTY")
+                    ){
+                        for (String splitTexString : text.split("\n")) {
+                            
+                            if (find(segment, splitTexString)) {
+                                if (find(sousSegment, splitTexString)){
+                                    if (find(codeZone, splitTexString)){
+                                        docStringList += docx.getshortName()+";";
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }else docStringList += docx.getshortName()+";";
+                }  
             }
-            variablesDocStringList.add(new String[]{variable, docStringList});
+            variablesDocStringList.add(new String[]{codeZone, docStringList});
         }
         System.out.println("\nSaving results...");
         excelFile.saveDatatoSheet(variablesDocStringList);
         Date date2 = new Date();
         long delta = date2.getTime()-date.getTime();
-        
+        int minutes = (int)(delta/60000);
+        int seconds = (int)(delta/1000)-(minutes*60);
         System.out.println("Débuté à: "+s.format(date));
-        System.out.println("Terminé en "+ delta/6000+"minutes à: "+s.format(date2));
+        System.out.println("Terminé en "+ minutes+" minutes "+seconds+" à: "+s.format(date2));
+    }
+    private static boolean find(String elemToFind, String doc){
+        final Pattern p = Pattern.compile(elemToFind);
+        Matcher m = p.matcher(doc);
+        return m.find();
     }
 }

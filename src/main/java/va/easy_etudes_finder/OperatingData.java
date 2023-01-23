@@ -11,6 +11,7 @@ public class OperatingData {
     private String SheetName = "Zones_Segments";
     private String filePath = "/home/Jaffleman/Documents/banque-docx/";
     private int variableColumnNumber = 5, resultColumnNumber = -1;
+    public boolean newSheetForResult;
     
     public OperatingData() throws IOException {
         InputStreamReader isr=new InputStreamReader(System.in);
@@ -23,15 +24,12 @@ public class OperatingData {
         String EFName = br.readLine();
         if(EFName.length()>0) excelFileName = EFName;
 
-        System.out.print("Please enter sheet name (if different from: 'feuille1'): ");
+        System.out.print("Please enter sheet name (if different from: 'Zones_Segments'): ");
         String SName = br.readLine();
         if (SName.length()>0) SheetName = SName;
-        System.out.print("Please enter variable column : ");
-        int vcn = Converter.convertion(br.readLine());
-        if (vcn>-1) variableColumnNumber = vcn;
         System.out.print("Same sheet for results (yes/no)?");
-        boolean sameSheet = br.readLine().equals("no")?false:true;
-        if(sameSheet) {
+        this.newSheetForResult = br.readLine().equals("no")?true:false;
+        if(!newSheetForResult) {
             System.out.print("Please enter result column : ");
             resultColumnNumber = Converter.convertion(br.readLine()); 
         }

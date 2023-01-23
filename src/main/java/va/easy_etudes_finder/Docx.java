@@ -32,7 +32,6 @@ public class Docx extends Fichier{
             }}}
             document.close();fis.close();
         }catch(Exception e){}
-        //System.out.println(text);
         return text;
     }
     public String getText(){
