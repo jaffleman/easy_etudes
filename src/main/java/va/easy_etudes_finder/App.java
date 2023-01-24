@@ -44,8 +44,6 @@ public class App {
             String fileName = file.getName();
             if(fileName.endsWith(".docx")) {
                 docTab[count] = new Docx(fileName, initData.getPatn());
-                System.out.println(".");
-
                 count++;
             }
         }

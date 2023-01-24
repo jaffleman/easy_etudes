@@ -15,11 +15,11 @@ public class Docx extends Fichier{
         super.name = docName;
         super.path = docPath;
         this.text = extractText();
-        System.out.print(".");
     }
     private String extractText(){
         String text="";
         try{
+            System.out.flush();
             System.out.println(name);
             File f =  new File(path+name);
             FileInputStream fis = new FileInputStream(f.getAbsolutePath());

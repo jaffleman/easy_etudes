@@ -1,6 +1,7 @@
 package va.easy_etudes_finder;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,9 +25,9 @@ public class Xlsx extends Fichier {
     private String pathName;
     private int sousSegmentColumnIndex;
     private int segmentColumnIndex;
-    private int codeZoneRowIndex;
     private int codeZoneColumnIndex;
     private int codeRubriqueHRAIndex;
+    private int codeZoneRowIndex;
     
     public Xlsx(OperatingData initData){
         File f = new File(initData.getPatn()+initData.getExcelFileName());
@@ -41,7 +42,6 @@ public class Xlsx extends Fichier {
         XSSFSheet sheet = wb.getSheet(this.sheetName);
         boolean isFound = false;
         for (Row row : sheet) {
-            System.out.print(".");
             for (Cell cell : row){
                 this.codeZoneRowIndex = cell.getRowIndex();
                 if (cell.getStringCellValue().equals("Segment")){
@@ -117,23 +117,26 @@ public class Xlsx extends Fichier {
      * return a list of variables from the codeZone column from the Xlsx file
      */
     public List<String[]> getCodeZoneList() {
-        this.codeZoneRowIndex++;
+        // this.codeZoneRowIndex++;
         XSSFSheet sheet = wb.getSheet(this.sheetName);
-        int lastRow = sheet.getLastRowNum();
         List<String[]> myCodeZoneList = new ArrayList<>();
-        for (int i = codeZoneRowIndex; i < lastRow; i++) {
-            String[] variableTab = new String[4];
-            XSSFCell codeZoneCell = sheet.getRow(i).getCell(codeZoneColumnIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
-            XSSFCell segmentCell = sheet.getRow(i).getCell(segmentColumnIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
-            XSSFCell sousSegmentCell = sheet.getRow(i).getCell(sousSegmentColumnIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
-            XSSFCell codeRubriqueHRA = sheet.getRow(i).getCell(codeRubriqueHRAIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
-            try {
-                variableTab[0] = codeZoneCell.getStringCellValue();
-                variableTab[1] = segmentCell.getStringCellValue();
-                variableTab[2] = sousSegmentCell.getStringCellValue();
-                variableTab[3] = codeRubriqueHRA.getStringCellValue();
-                myCodeZoneList.add(variableTab);            
-            } catch (Exception e) {
+        Iterator<Row> iterator = sheet.iterator();
+        while (iterator.hasNext()) {
+            Row currentRow = iterator.next();
+            if (!(currentRow.getRowNum()<=this.codeZoneRowIndex)){
+                String[] variableTab = new String[4];
+                Cell codeZoneCell = currentRow.getCell(codeZoneColumnIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
+                Cell segmentCell = currentRow.getCell(segmentColumnIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
+                Cell sousSegmentCell = currentRow.getCell(sousSegmentColumnIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
+                Cell codeRubriqueHRA = currentRow.getCell(codeRubriqueHRAIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
+                try {
+                    variableTab[0] = codeZoneCell.getStringCellValue();
+                    variableTab[1] = segmentCell.getStringCellValue();
+                    variableTab[2] = sousSegmentCell.getStringCellValue();
+                    variableTab[3] = codeRubriqueHRA.getStringCellValue();
+                    myCodeZoneList.add(variableTab);            
+                } catch (Exception e) {
+                }
             }
         }
         return myCodeZoneList;
