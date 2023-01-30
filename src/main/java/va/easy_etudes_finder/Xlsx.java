@@ -12,11 +12,11 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.xssf.usermodel.XSSFCell;
+// import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-public class Xlsx extends Fichier {
+public class Xlsx {
     private final String RESULT_SHEET = "result_sheet";
     private String sheetName = "";
     private int resultColumn;
@@ -29,11 +29,15 @@ public class Xlsx extends Fichier {
     private int codeRubriqueHRAIndex;
     private int codeZoneRowIndex;
     
+    /**
+     * @param initData
+     */
     public Xlsx(OperatingData initData){
         File f = new File(initData.getPatn()+initData.getExcelFileName());
         try {System.out.print(".");
             FileInputStream fichier = new FileInputStream(f);
             this.wb = new XSSFWorkbook(fichier);
+            fichier.close();
         } catch (Exception e) {e.printStackTrace(); }
         this.sheetName = initData.getSheetName();
         this.resultColumn = initData.getResultColumnNuber();
@@ -125,15 +129,17 @@ public class Xlsx extends Fichier {
             Row currentRow = iterator.next();
             if (!(currentRow.getRowNum()<=this.codeZoneRowIndex)){
                 String[] variableTab = new String[4];
+
                 Cell codeZoneCell = currentRow.getCell(codeZoneColumnIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
                 Cell segmentCell = currentRow.getCell(segmentColumnIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
                 Cell sousSegmentCell = currentRow.getCell(sousSegmentColumnIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
                 Cell codeRubriqueHRA = currentRow.getCell(codeRubriqueHRAIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
                 try {
-                    variableTab[0] = codeZoneCell.getStringCellValue();
-                    variableTab[1] = segmentCell.getStringCellValue();
-                    variableTab[2] = sousSegmentCell.getStringCellValue();
-                    variableTab[3] = codeRubriqueHRA.getStringCellValue();
+                    
+                    variableTab[0] = codeZoneCell.getStringCellValue().toString();
+                    variableTab[1] = segmentCell.getStringCellValue().toString();
+                    variableTab[2] = sousSegmentCell.getStringCellValue().toString();
+                    variableTab[3] = codeRubriqueHRA.getStringCellValue().toString();
                     myCodeZoneList.add(variableTab);            
                 } catch (Exception e) {
                 }
@@ -162,7 +168,108 @@ public class Xlsx extends Fichier {
     }
 
 
+    private String cellValueExtractor(Cell cellule){
+        String value;
+        if (cellule==null) return "";
+        switch (cellule.getCellType()) {
+            case STRING:
+                value = cellule.getStringCellValue();
+                break;
+            case NUMERIC:
+                value = Double.toString(cellule.getNumericCellValue());               
+                break;
+            default:
+                value = "";
+                break;
+        }
+        return value;
+    }
 
+    public List <Segments> getVariables(){
+        XSSFSheet sheet = wb.getSheet(this.sheetName);
+        List<String[]> myCodeZoneList = new ArrayList<>();
+        Iterator<Row> iterator = sheet.iterator();
+        while (iterator.hasNext()) {
+            Row currentRow = iterator.next();
+            if (currentRow.getRowNum()>this.codeZoneRowIndex){
+                String[] variableTab = new String[5];
+                Cell codeZoneCell = currentRow.getCell(codeZoneColumnIndex, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                Cell segmentCell = currentRow.getCell(segmentColumnIndex, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                Cell sousSegmentCell = currentRow.getCell(sousSegmentColumnIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
+                Cell codeRubriqueHRA = currentRow.getCell(codeRubriqueHRAIndex, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                try {
+                    variableTab[1] = segmentCell.getStringCellValue();
+                    variableTab[0] = cellValueExtractor(codeZoneCell);
+                    variableTab[2] = cellValueExtractor(sousSegmentCell);
+                    variableTab[3] = cellValueExtractor(codeRubriqueHRA);
+                    variableTab[4] = Integer.toString(currentRow.getRowNum()) ;
+                    myCodeZoneList.add(variableTab);            
+                } catch (Exception e) {
+                }
+            }
+        }
+        List <Segments> segList = new ArrayList<>();
+        List <SousSegment> sousSegList = new ArrayList<>();
+        List <String[]> zoneList = new ArrayList<>();
+        String prevSegName = "null", prevSsegName="null";
+        int size = myCodeZoneList.size();
+        //String[] maZone=new String[2];
+        for (int i = 0; i<size; i++) {
+            if (myCodeZoneList.get(i)[1].equals(prevSegName)){
+                if (myCodeZoneList.get(i)[2].equals(prevSsegName)){
+                    zoneList.add(new String[]{myCodeZoneList.get(i)[0], myCodeZoneList.get(i)[3], myCodeZoneList.get(i)[4]});
+                    //maZone = new String[] {myCodeZoneList.get(i)[0], myCodeZoneList.get(i)[3]};
+                    if (i == size-1){
+                        zoneList.add(new String[]{myCodeZoneList.get(i)[0], myCodeZoneList.get(i)[3], myCodeZoneList.get(i)[4]});
+                        sousSegList.add(new SousSegment(prevSsegName, new ArrayList<>(zoneList)));
+                        zoneList.clear();
+                        segList.add(new Segments(prevSegName, sousSegList)); 
+                        sousSegList.clear();                      
+                    }
+                }else{
+                    //zoneList.add(maZone);
+                    zoneList.add(new String[]{myCodeZoneList.get(i)[0], myCodeZoneList.get(i)[3], myCodeZoneList.get(i)[4]});
+                    sousSegList.add(new SousSegment(prevSsegName, new ArrayList<>(zoneList)));
+                    prevSsegName = myCodeZoneList.get(i)[2];
+                    zoneList.clear();
+                    zoneList.add(new String[]{myCodeZoneList.get(i)[0], myCodeZoneList.get(i)[3], myCodeZoneList.get(i)[4]});
+                    //maZone = new String[] {myCodeZoneList.get(i)[0], myCodeZoneList.get(i)[3]};
+                    if (i == size-1){
+                        zoneList.add(new String[]{myCodeZoneList.get(i)[0], myCodeZoneList.get(i)[3], myCodeZoneList.get(i)[4]});
+                        sousSegList.add(new SousSegment(prevSsegName, new ArrayList<>(zoneList)));
+                        zoneList.clear();
+                        segList.add(new Segments(prevSegName, sousSegList));                       
+                        sousSegList.clear();                      
+                    }
+                }
+            }else{
+                if(i==0) {
+                    prevSegName = myCodeZoneList.get(0)[1];
+                    prevSsegName = myCodeZoneList.get(0)[2];
+                    zoneList.add(new String[]{myCodeZoneList.get(0)[0], myCodeZoneList.get(0)[3], myCodeZoneList.get(i)[4]});
+                }else{
+                    //zoneList.add(maZone);
+                    zoneList.add(new String[]{myCodeZoneList.get(i)[0], myCodeZoneList.get(i)[3], myCodeZoneList.get(i)[4]});
+                    sousSegList.add(new SousSegment(prevSsegName, new ArrayList<>(zoneList)));
+                    segList.add(new Segments(prevSegName, sousSegList));
+                    sousSegList.clear();                      
+                    prevSsegName = myCodeZoneList.get(i)[2];
+                    prevSegName = myCodeZoneList.get(i)[1];
+                    zoneList.clear();
+                    zoneList.add(new String[]{myCodeZoneList.get(i)[0], myCodeZoneList.get(i)[3], myCodeZoneList.get(i)[4]});
+                    //maZone = new String[] {myCodeZoneList.get(i)[0], myCodeZoneList.get(i)[3]};
+                    if (i==size-1){
+                        zoneList.add(new String[]{myCodeZoneList.get(i)[0], myCodeZoneList.get(i)[3], myCodeZoneList.get(i)[4]});
+                        sousSegList.add(new SousSegment(prevSsegName, new ArrayList<>(zoneList)));
+                        zoneList.clear();
+                        segList.add(new Segments(prevSegName, sousSegList));
+                        sousSegList.clear();                      
+                    }
+                }
+            }
+        }
+        return segList;
+    }
 
 
   

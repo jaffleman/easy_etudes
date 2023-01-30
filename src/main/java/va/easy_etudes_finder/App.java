@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// import javax.swing.text.Segment;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,6 +50,7 @@ public class App {
         }
         System.out.println("\nStart seaching variables...");
         List <String[]> variablesDocStringList = new ArrayList<>();
+        List<Segments> listOfVBis = excelFile.getVariables();
         List<String[]> listOfV = excelFile.getCodeZoneList();
         for (String[] variables:listOfV) {// Pour chaque lignes de variables
             System.out.print(".");
@@ -57,16 +59,38 @@ public class App {
             String sousSegment = variables[2];
             String docStringList = "";
             for(Docx docx : docTab){ //pour chaque docx
-                String text = docx.getText();
+                List<String[]> text = docx.getText();
+                final Pattern p ;
+                switch (codeZone) {
+                    case "Debut":
+                        p = Pattern.compile("(Début)|(debut)|(début)|(Debut)");
+                        break;
+                    case "Fin":
+                        p = Pattern.compile("(Fin)|(fin)");
+                        break;
+                    case "SUBTY":
+                        p = Pattern.compile("(SUBTY)|(subty)|(Subty)");
+                        break;
                 
+                    default:
+                        p = Pattern.compile(codeZone);
+                        break;
+                }
+                for (String[] tabElem : text) {
+                    for(String elem : tabElem) {
+                Matcher matcher = p.matcher(elem) ; 
+
+                while (matcher.find()) {  
+                    System.out.println(matcher.group()) ;  
+                }
                 
-                if (find(codeZone, text)){
+                if (find(codeZone, elem)){
                     if (
                         codeZone.equals("Debut")||
                         codeZone.equals("Fin")||
                         codeZone.equals("SUBTY")
                     ){
-                        for (String splitTexString : text.split("\n")) {
+                        for (String splitTexString : elem.split("\n")) {
                             
                             if (find(segment, splitTexString)) {
                                 if (find(sousSegment, splitTexString)){
@@ -78,7 +102,8 @@ public class App {
                             }
                         }
                     }else docStringList += docx.getshortName()+";";
-                }  
+                }  }
+                }
             }
             variablesDocStringList.add(new String[]{codeZone, docStringList});
         }
@@ -91,6 +116,9 @@ public class App {
         System.out.println("Débuté à: "+s.format(date));
         System.out.println("Terminé en "+ minutes+" minutes "+seconds+" à: "+s.format(date2));
     }
+    // private static List <String[]> variablesFinder(List<Segment> segTab){
+        
+    // }
     private static boolean find(String elemToFind, String doc){
         final Pattern p = Pattern.compile(elemToFind);
         Matcher m = p.matcher(doc);

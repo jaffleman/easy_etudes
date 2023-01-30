@@ -24,7 +24,7 @@
         <name>GroupDocs Java API</name>
         <url>https://releases.groupdocs.com/java/repo/</url>
     </repository>
-</repositories>
+  </repositories>
 
 
   <dependencies>
