@@ -16,109 +16,90 @@ import java.text.SimpleDateFormat;
 public class App {
  
     public static void main(String[] args) throws IOException {
-        OperatingData initData = new OperatingData();
-        SimpleDateFormat s = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        String report = "";
+        OperatingData initDataRequested = new OperatingData();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         Date date = new Date();
+        report += "Débuté à: "+simpleDateFormat.format(date);
         //System.out.println(s.format(date));
         System.out.println("\nCreation of the Xlsx Class file...");
-        Xlsx excelFile = new Xlsx(initData);
+        Xlsx excelFile = new Xlsx(initDataRequested);
+        report += "\nExcel File:";
+        if (excelFile!=null) report += excelFile.getReport();
         //if(initData.getResultColumnNuber()==-1) excelFile = new Xlsx(filePath, excelFileName, SheetName, variableColumnNumber);
         //else excelFile;//filePath, excelFileName, SheetName, variableColumnNumber, resultColumnNumber);
-        File dir  = new File(initData.getPatn());
-        File[] liste = dir.listFiles();
-        if (liste == null){
-            System.out.println("Sorry, no usable files in this directory!");
+        File dir  = new File(initDataRequested.getPatn());
+        File[] listeOfFiles = dir.listFiles();
+        if (listeOfFiles == null){
+            report += "\nPathFile error:";
+            report += "\nSorry, no usable files in this directory!";
             return;
         }
-        int count = 0;
-        for (File file : liste){ 
-            System.out.print(".");
-            String fileName = file.getName();
-            if(fileName.endsWith(".docx")) {
-                count++;
-            }
-        }
+        
         System.out.println("\nCreation of the docx Class files...");
-        Docx[] docTab = new Docx[count];
-        count = 0;
-        for(File file : liste){
+        report += "\nDocx file :";
+        List <Docx> docxList = new ArrayList<>();
+        for(File file : listeOfFiles){
             String fileName = file.getName();
-            if(fileName.endsWith(".docx")) {
-                docTab[count] = new Docx(fileName, initData.getPatn());
-                count++;
-            }
+            if(fileName.endsWith(".docx")) docxList.add(new Docx(fileName, initDataRequested.getPatn()));
+        }
+        report += "\nNumber of docx founded: "+docxList.size();
+        for (Docx docx : docxList) {
+            report += docx.getReport();
         }
         System.out.println("\nStart seaching variables...");
-        List <String[]> variablesDocStringList = new ArrayList<>();
-        List<Segments> listOfVBis = excelFile.getVariables();
-        List<String[]> listOfV = excelFile.getCodeZoneList();
-        for (String[] variables:listOfV) {// Pour chaque lignes de variables
-            System.out.print(".");
-            String codeZone = variables[0];
-            String segment = variables[1];
-            String sousSegment = variables[2];
-            String docStringList = "";
-            for(Docx docx : docTab){ //pour chaque docx
-                List<String[]> text = docx.getText();
-                final Pattern p ;
-                switch (codeZone) {
-                    case "Debut":
-                        p = Pattern.compile("(Début)|(debut)|(début)|(Debut)");
-                        break;
-                    case "Fin":
-                        p = Pattern.compile("(Fin)|(fin)");
-                        break;
-                    case "SUBTY":
-                        p = Pattern.compile("(SUBTY)|(subty)|(Subty)");
-                        break;
-                
-                    default:
-                        p = Pattern.compile(codeZone);
-                        break;
-                }
-                for (String[] tabElem : text) {
-                    for(String elem : tabElem) {
-                Matcher matcher = p.matcher(elem) ; 
-
-                while (matcher.find()) {  
-                    System.out.println(matcher.group()) ;  
-                }
-                
-                if (find(codeZone, elem)){
-                    if (
-                        codeZone.equals("Debut")||
-                        codeZone.equals("Fin")||
-                        codeZone.equals("SUBTY")
-                    ){
-                        for (String splitTexString : elem.split("\n")) {
-                            
-                            if (find(segment, splitTexString)) {
-                                if (find(sousSegment, splitTexString)){
-                                    if (find(codeZone, splitTexString)){
-                                        docStringList += docx.getshortName()+";";
-                                        break;
-                                    }
+        List <String> excelSegStringList = excelFile.getSegmentList();
+        List <Segments> excelSegElementList = excelFile.getSegList();
+        for (Docx docx : docxList) { // pour chaque docx
+            for (Segments docxSegElement : docx.getSegList()) { // pour chaque Segment de docx
+                int index = excelSegStringList.indexOf(docxSegElement.getName()); // recupere le segment equivalent dans le fichier excel
+                if (index!=-1){
+                    for (SousSegment docxSousSegElement : docxSegElement.getSsList()) { // pour chaque SousSegment de docx
+                        for (SousSegment excelSousSegElement : excelSegElementList.get(index).getSsList()) { //pour chaque SousSegment de xlsx
+                            if(docxSousSegElement.getName().equals(excelSousSegElement.getName())){ // si le SousSegment de docx = le SousSegment de xlsx
+                                for (String[] docxCodeTable : docxSousSegElement.getVarList()) { //pour chaque couple de variables (codeZone et codeBHA) de docx
+                                    for (String[] excelCodeTable : excelSousSegElement.getVarList()) {//pour chaque couple de variables (codeZone et codeBHA) de docx
+                                        if(docxCodeTable[0].equals(excelCodeTable[1])){ // si codeBHA de docx = codeBHA de xlsx
+                                           // System.out.println( docxSegElement.getName()+" "+ docxSousSegElement.getName()+" "+ docxCodeTable[0]+" match "+excelCodeTable[1]);
+                                           Pattern codeZone = Pattern.compile(docx.getshortName());
+                                            Matcher codeZonMatcher = codeZone.matcher(excelCodeTable[2]);   
+                                            if (!codeZonMatcher.find()) excelCodeTable[2]+=docx.getshortName()+";";
+                                    }}
                                 }
                             }
                         }
-                    }else docStringList += docx.getshortName()+";";
-                }  }
+                    }
+                }else{
+                    System.out.println("Not found "+docxSegElement.getName());
                 }
             }
-            variablesDocStringList.add(new String[]{codeZone, docStringList});
+        }
+        for (Segments segments : excelSegElementList) {
+            for (SousSegment sousSegments : segments.getSsList()) {
+                for (String[] varList : sousSegments.getVarList()) {
+                    System.out.println(varList[2]);
+                    
+                }
+                
+            }
         }
         System.out.println("\nSaving results...");
-        excelFile.saveDatatoSheet(variablesDocStringList);
+        excelFile.saveDatatoSheet();
         Date date2 = new Date();
         long delta = date2.getTime()-date.getTime();
         int minutes = (int)(delta/60000);
         int seconds = (int)(delta/1000)-(minutes*60);
-        System.out.println("Débuté à: "+s.format(date));
-        System.out.println("Terminé en "+ minutes+" minutes "+seconds+" à: "+s.format(date2));
+        System.out.println(report);
+        System.out.println("Terminé en "+ minutes+" minutes "+seconds+" à: "+simpleDateFormat.format(date2));  
     }
-    // private static List <String[]> variablesFinder(List<Segment> segTab){
-        
-    // }
+    private static int getFileNumber(File[] listeOfFiles) {
+        int count = 0;
+        for (File file : listeOfFiles){ 
+            System.out.print(".");
+            if(file.getName().endsWith(".docx")) count++;
+        }
+        return count;
+    }
     private static boolean find(String elemToFind, String doc){
         final Pattern p = Pattern.compile(elemToFind);
         Matcher m = p.matcher(doc);
