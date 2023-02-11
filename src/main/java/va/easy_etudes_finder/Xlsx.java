@@ -1,6 +1,7 @@
 package va.easy_etudes_finder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.io.File;
@@ -12,7 +13,6 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.ss.util.CellRangeAddress;
-// import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -24,6 +24,7 @@ public class Xlsx {
     private XSSFWorkbook wb;
     private boolean newSheetForResults=false;
     private String pathName;
+    private int fsfIndex;
     private int sousSegmentColumnIndex;
     private int segmentColumnIndex;
     private int codeZoneColumnIndex;
@@ -41,7 +42,7 @@ public class Xlsx {
      */
     public Xlsx(OperatingData initData){
         System.out.println("Reading Xlsx file...");
-        File f = new File(initData.getPatn()+initData.getExcelFileName());
+        File f = new File("/home/Jaffleman/Documents/banque-docx/xlsx/"+initData.getExcelFileName());
         try {
             System.out.print(".");
             FileInputStream fichier = new FileInputStream(f);
@@ -73,6 +74,9 @@ public class Xlsx {
                 }
                 if (cell.getStringCellValue().equals("Code rubrique HRA")){
                     this.codeRubriqueHRAIndex = cell.getColumnIndex();
+                }
+                if (cell.getStringCellValue().equals("FSF actuel")){
+                    this.fsfIndex= cell.getColumnIndex();
                     isFound = true;
                     break;
                 }
@@ -80,56 +84,7 @@ public class Xlsx {
             if (isFound) break;
         }
         this.getCodeZoneList();
-        this.getVariables();
-        if(newSheetForResults){
-            System.out.println("Creating new sheet for results...");
-        XSSFSheet feuille = wb.getSheet(RESULT_SHEET);
-            if (feuille==null){
-                feuille = wb.createSheet(RESULT_SHEET);
-                Row row0 = feuille.createRow(0);
-                feuille.addMergedRegion(new CellRangeAddress(0, 0, 0, 1 ));
-                            
-                Cell cell = row0.createCell(0, CellType.STRING);
-                cell.setCellValue("SEARCH RESULTS:");
-                cell.setCellStyle(CelluleStyle.TitleStyle(wb));
-                
-                short height = 500;
-                row0.setHeight(height);
-                
-                Row row1 = feuille.createRow(1);
-                cell = row1.createCell(0, CellType.STRING);
-                cell.setCellValue("Segment:");
-
-                cell = row1.createCell(1, CellType.STRING);
-                cell.setCellValue("Sous Segment:");
-
-                cell = row1.createCell(2, CellType.STRING);
-                cell.setCellValue("Variables list:");
-
-                cell = row1.createCell(3, CellType.STRING);
-                cell.setCellValue("Code rubrique HRA:");
-
-                // cell.setCellStyle(style);
-                cell = row1.createCell(4, CellType.STRING);
-                cell.setCellValue("found Etudes:");
-                // cell.setCellStyle(style);
-                for (int i = 2; i <= rowDataList.size()+1; i++ ) {
-
-                    row1 = feuille.createRow(i);
-                    cell = row1.createCell(0, CellType.STRING);
-                    cell.setCellValue(rowDataList.get(i-2)[1]);
-                    cell = row1.createCell(1, CellType.STRING);
-                    cell.setCellValue(rowDataList.get(i-2)[2]);
-                    cell = row1.createCell(2, CellType.STRING);
-                    cell.setCellValue(rowDataList.get(i-2)[0]);
-                    cell = row1.createCell(3, CellType.STRING);
-                    cell.setCellValue(rowDataList.get(i-2)[3]);
-                }
-                writeFlux();
-            }
-        }
-        
-        
+        this.getVariables();        
     }
 
 
@@ -144,25 +99,27 @@ public class Xlsx {
         while (iterator.hasNext()) {
             Row currentRow = iterator.next();
             if (currentRow.getRowNum()>this.codeZoneRowIndex){
-                String[] variableTab = new String[6]; //Stockage des données dans un tableau de 5 elements
-                Cell codeZoneCell = currentRow.getCell(codeZoneColumnIndex, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                String[] variableTab = new String[9]; //Stockage des données dans un tableau de 5 elements
                 Cell segmentCell = currentRow.getCell(segmentColumnIndex, MissingCellPolicy.RETURN_BLANK_AS_NULL);
                 Cell sousSegmentCell = currentRow.getCell(sousSegmentColumnIndex, MissingCellPolicy.RETURN_NULL_AND_BLANK);
+                Cell codeZoneCell = currentRow.getCell(codeZoneColumnIndex, MissingCellPolicy.RETURN_BLANK_AS_NULL);
                 Cell codeRubriqueHRA = currentRow.getCell(codeRubriqueHRAIndex, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                Cell fsfActuel = currentRow.getCell(fsfIndex, MissingCellPolicy.RETURN_BLANK_AS_NULL);
                 try {
                     variableTab[0] = segmentCell.getStringCellValue();
                     variableTab[1] = cellValueExtractor(sousSegmentCell);
                     variableTab[2] = cellValueExtractor(codeZoneCell);
                     variableTab[3] = cellValueExtractor(codeRubriqueHRA);
-                    variableTab[4] = "";
+                    variableTab[4] = cellValueExtractor(fsfActuel);
                     variableTab[5] = Integer.toString(currentRow.getRowNum());
                     rowDataList.add(variableTab);            
                 } catch (Exception e) {
+                    //report +="\nSomething goes wong in 'getCodeZoneList()' (SheetRow: "+currentRow.getRowNum()+")";
                 }
             }
         }
         report +="\n number of variable found: "+rowDataList.size();
-        report +="\n\n\n";
+        report +="\n";
     }
 
 
@@ -173,6 +130,7 @@ public class Xlsx {
      * write information into the Xlsx file
      */
     private void writeFlux(){
+        System.out.print("\nFinalising...");
         File f = new File(this.pathName);
         try {
             System.out.print(".");
@@ -193,7 +151,9 @@ public class Xlsx {
                 value = cellule.getStringCellValue();
                 break;
             case NUMERIC:
-                value = Double.toString(cellule.getNumericCellValue()).split("")[0];
+                Double dNumber = cellule.getNumericCellValue();
+                int iNumber = dNumber.intValue();
+                value = Integer.toString(iNumber);
                 break;
             default:
                 value = "";
@@ -209,9 +169,15 @@ public class Xlsx {
         int size = rowDataList.size();
         //String[] maZone=new String[2];
         for (int row = 0; row<size; row++) {
-            if (rowDataList.get(row)[0].equals(prevSegName)){
-                if (rowDataList.get(row)[1].equals(prevSsegName)){
-                    zoneList.add(new String[]{rowDataList.get(row)[2], rowDataList.get(row)[3],rowDataList.get(row)[4], rowDataList.get(row)[5]});
+            String segment = rowDataList.get(row)[0];
+            String sousSegment = rowDataList.get(row)[1];
+            String codeZone = rowDataList.get(row)[2];
+            String codeBHA =rowDataList.get(row)[3];
+            String fsfActuel = rowDataList.get(row)[4];
+            String rowIndex = rowDataList.get(row)[5];
+            if (segment.equals(prevSegName)){
+                if (sousSegment.equals(prevSsegName)){
+                    zoneList.add(new String[]{codeZone,codeBHA, fsfActuel,"", "", "", rowIndex});
                     if (row == size-1){
                         sousSegList.add(new SousSegment(prevSsegName, new ArrayList<>(zoneList)));
                         zoneList.clear();
@@ -221,14 +187,14 @@ public class Xlsx {
                     }
                 }else{
                     //zoneList.add(maZone);
-                    // zoneList.add(new String[]{rowDataList.get(row)[2], rowDataList.get(row)[3],rowDataList.get(4)[2], rowDataList.get(row)[5]});
+                    // zoneList.add(new String[]{codeZone, fsfActuel,rowDataList.get(4)[2], overFoundFsf});
                     sousSegList.add(new SousSegment(prevSsegName, new ArrayList<>(zoneList)));
-                    prevSsegName = rowDataList.get(row)[1];
+                    prevSsegName = sousSegment;
                     zoneList.clear();
-                    zoneList.add(new String[]{rowDataList.get(row)[2], rowDataList.get(row)[3],rowDataList.get(row)[4], rowDataList.get(row)[5]});
+                    zoneList.add(new String[]{codeZone, codeBHA,fsfActuel,"", "", "",rowIndex});
                     //maZone = new String[] {rowDataList.get(i)[0], rowDataList.get(i)[3]};
                     if (row == size-1){
-                        // zoneList.add(new String[]{rowDataList.get(row)[2], rowDataList.get(row)[3],rowDataList.get(4)[2], rowDataList.get(row)[5]});
+                        // zoneList.add(new String[]{codeZone, fsfActuel,rowDataList.get(4)[2], overFoundFsf});
                         sousSegList.add(new SousSegment(prevSsegName, new ArrayList<>(zoneList)));
                         zoneList.clear();
                         segList.add(new Segments(prevSegName, sousSegList));                       
@@ -238,23 +204,23 @@ public class Xlsx {
                 }
             }else{
                 if(row==0) {
-                    prevSegName = rowDataList.get(0)[0];
-                    prevSsegName = rowDataList.get(0)[1];
-                    zoneList.add(new String[]{rowDataList.get(row)[2], rowDataList.get(row)[3],rowDataList.get(row)[4], rowDataList.get(row)[5]});
+                    prevSegName = segment;
+                    prevSsegName = sousSegment;
+                    zoneList.add(new String[]{codeZone,codeBHA, fsfActuel,"", "", "",rowIndex});
                 }else{
                     //zoneList.add(maZone);
-                    // zoneList.add(new String[]{rowDataList.get(row)[2], rowDataList.get(row)[3],rowDataList.get(4)[2], rowDataList.get(row)[5]});
+                    // zoneList.add(new String[]{codeZone, fsfActuel,rowDataList.get(4)[2], overFoundFsf});
                     sousSegList.add(new SousSegment(prevSsegName, new ArrayList<>(zoneList)));
                     segmentList.add(prevSegName);
                     segList.add(new Segments(prevSegName, sousSegList));
                     sousSegList.clear();                      
-                    prevSsegName = rowDataList.get(row)[1];
-                    prevSegName = rowDataList.get(row)[0];
+                    prevSsegName = sousSegment;
+                    prevSegName = segment;
                     zoneList.clear();
-                    zoneList.add(new String[]{rowDataList.get(row)[2], rowDataList.get(row)[3],rowDataList.get(row)[4], rowDataList.get(row)[5]});
+                    zoneList.add(new String[]{codeZone,codeBHA, fsfActuel,"", "", "",rowIndex});
                     //maZone = new String[] {rowDataList.get(i)[0], rowDataList.get(i)[3]};
                     if (row==size-1){
-                        // zoneList.add(new String[]{rowDataList.get(row)[2], rowDataList.get(row)[3],rowDataList.get(4)[2], rowDataList.get(row)[5]});
+                        // zoneList.add(new String[]{codeZone, fsfActuel,rowDataList.get(4)[2], overFoundFsf});
                         sousSegList.add(new SousSegment(prevSsegName, new ArrayList<>(zoneList)));
                         zoneList.clear();
                         segList.add(new Segments(prevSegName, sousSegList));
@@ -273,19 +239,142 @@ public class Xlsx {
     public List<String> getSegmentList() {
         return segmentList;
     }
-  
-    public void saveDatatoSheet(){
-        XSSFSheet feuille = wb.getSheet(this.newSheetForResults?RESULT_SHEET:sheetName);
+    private void compatator(){
         for(Segments segment : this.segList){
             for (SousSegment sousSegment : segment.getSsList()) {
-                for (String[] variable : sousSegment.getVarList()){
-                Row row = feuille.getRow(Integer.parseInt(variable[3]));
-                Cell cell = row.createCell(newSheetForResults?4:resultColumn);
-                cell.setCellValue(variable[2]);
+                for (String[] variable : sousSegment.getXlsxVarList()){
+                    String unfoundValue ="";
+                    String unfoundValue2 ="";
+                    for (String easyEtudesFoundedDCD : variable[3].split(";")){
+                        if (!variable[2].contains(easyEtudesFoundedDCD)) unfoundValue += easyEtudesFoundedDCD+";";
+                    }
+                    for (String fsfActuelElement : variable[2].split(";")){
+                        if (!variable[3].contains(fsfActuelElement)) unfoundValue2 += fsfActuelElement+";";
+                    }
+                    variable[5] = unfoundValue;
+                    variable[4] = unfoundValue2;
+                }
+            }
+        }
+    }
+    public void saveDatatoSheet(){
+        this.compatator();
+        XSSFSheet feuille = wb.getSheet(this.newSheetForResults?RESULT_SHEET:sheetName);
+
+
+        if(newSheetForResults){
+            System.out.println("Creating new sheet for results...");
+            if (feuille==null){
+                feuille = wb.createSheet(RESULT_SHEET);
+                Row row0 = feuille.createRow(0);
+                feuille.addMergedRegion(new CellRangeAddress(0, 0, 0, 1 ));
+                            
+                Cell cell = row0.createCell(0, CellType.STRING);
+                cell.setCellValue("SEARCH RESULTS:");
+                cell.setCellStyle(CelluleStyle.TitleStyle(wb));
+                
+                // short height = 500;
+                // row0.setHeight(height);
+                
+                Row row1 = feuille.createRow(1);
+                cell = row1.createCell(0, CellType.STRING);
+                cell.setCellValue("Segment:");
+
+                cell = row1.createCell(1, CellType.STRING);
+                cell.setCellValue("Sous Segment:");
+
+                cell = row1.createCell(2, CellType.STRING);
+                cell.setCellValue("Code Zone:");
+
+                cell = row1.createCell(3, CellType.STRING);
+                cell.setCellValue("Code rubrique HRA:");
+
+                cell = row1.createCell(4, CellType.STRING);
+                cell.setCellValue("FSF actuel:");
+                
+                cell = row1.createCell(5, CellType.STRING);
+                cell.setCellValue("EasyEtudes result:");
+
+                cell = row1.createCell(6, CellType.STRING);
+                cell.setCellValue("missing etudes:");
+
+                cell = row1.createCell(7, CellType.STRING);
+                cell.setCellValue("New found etudes:");
+
+            }
+        }
+        for(Segments segment : this.segList){
+        System.out.print(".");
+            for (SousSegment sousSegment : segment.getSsList()) {
+                for (String[] variable : sousSegment.getXlsxVarList()){
+                    Row row = newSheetForResults?feuille.createRow((Integer.parseInt(variable[6]))-2):
+                        feuille.getRow(Integer.parseInt(variable[6]));
+                    if (newSheetForResults){
+                        Cell cell = row.createCell(0, CellType.STRING);
+                        cell.setCellValue(segment.getName());
+                        cell = row.createCell(1, CellType.STRING);
+                        cell.setCellValue(sousSegment.getName());
+                        cell = row.createCell(2, CellType.STRING);
+                        cell.setCellValue(variable[0]);
+                        cell = row.createCell(3, CellType.STRING);
+                        cell.setCellValue(variable[1]);
+                        cell = row.createCell(4, CellType.STRING);
+                        cell.setCellValue(variable[2]);
+                    }
+                    Cell cell = row.createCell(newSheetForResults?5:resultColumn);
+                    Cell delta = row.createCell(newSheetForResults?6:resultColumn+1);
+                    Cell undelta = row.createCell(newSheetForResults?7:resultColumn+2);
+                    cell.setCellValue(variable[3]);
+                    delta.setCellValue(variable[4]);
+                    undelta.setCellValue(variable[5]);
                 }
             }
         }
         writeFlux();
+    }
+    public void workOnDcd(Docx2 docx){
+        System.out.print(".");
+        for (Segments docxSegment : docx.getSegList()){
+            int index = segmentList.indexOf(docxSegment.getName());
+            if (index == -1) {
+                report+= "\nUnknow Segment: "+docxSegment.getName()+" in docx: "+docx.getshortName();
+            }else{
+            Segments excelSegment = segList.get(index);
+            for (SousSegment docxSousSegment : docxSegment.getSsList()) {
+                Boolean sousSegExist = false;
+                for (SousSegment excelSousSegment : excelSegment.getSsList()) {
+                    String excelSousSegName = excelSousSegment.getName();
+                    String docxSousSegName = docxSousSegment.getName();
+                    if (docxSousSegName.equals(excelSousSegName)) {
+                        sousSegExist = true;
+                        for (String[] var : excelSousSegment.getXlsxVarList()) {
+                            for (String docxVar : docxSousSegment.getDocxVarList()) {
+                                if( docxVar.equals(var[0])){
+                                    if(!(Arrays.asList(var[3].split(";")).contains(docx.getshortName()))) 
+                                        var[3]+=docx.getshortName()+";";
+                                }
+                            }
+                            
+                        }
+                    }
+                }
+                if (!sousSegExist) {
+                    for (SousSegment excelSousSegment : excelSegment.getSsList()) {
+                        for (String[] var : excelSousSegment.getXlsxVarList()) {
+                            for (String docxVar : docxSousSegment.getDocxVarList()) {
+                                if( docxVar.equals(var[0])){
+                                    if(!(Arrays.asList(var[3].split(";")).contains(docx.getshortName()))) 
+                                        var[3]+=docx.getshortName()+";";
+                                }
+                            }
+                        }   
+                    } 
+                     
+                }
+
+            }
+            }
+        }
     }
     public String getReport() {
         return report;
