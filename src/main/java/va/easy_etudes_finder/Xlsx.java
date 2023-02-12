@@ -266,39 +266,39 @@ public class Xlsx {
             System.out.println("Creating new sheet for results...");
             if (feuille==null){
                 feuille = wb.createSheet(RESULT_SHEET);
-                Row row0 = feuille.createRow(0);
+                Row row = feuille.createRow(0);
                 feuille.addMergedRegion(new CellRangeAddress(0, 0, 0, 1 ));
                             
-                Cell cell = row0.createCell(0, CellType.STRING);
+                Cell cell = row.createCell(0, CellType.STRING);
                 cell.setCellValue("SEARCH RESULTS:");
                 cell.setCellStyle(CelluleStyle.TitleStyle(wb));
                 
                 // short height = 500;
-                // row0.setHeight(height);
+                // row.setHeight(height);
                 
-                Row row1 = feuille.createRow(1);
-                cell = row1.createCell(0, CellType.STRING);
+                row = feuille.createRow(1);
+                cell = row.createCell(0, CellType.STRING);
                 cell.setCellValue("Segment:");
 
-                cell = row1.createCell(1, CellType.STRING);
+                cell = row.createCell(1, CellType.STRING);
                 cell.setCellValue("Sous Segment:");
 
-                cell = row1.createCell(2, CellType.STRING);
+                cell = row.createCell(2, CellType.STRING);
                 cell.setCellValue("Code Zone:");
 
-                cell = row1.createCell(3, CellType.STRING);
+                cell = row.createCell(3, CellType.STRING);
                 cell.setCellValue("Code rubrique HRA:");
 
-                cell = row1.createCell(4, CellType.STRING);
+                cell = row.createCell(4, CellType.STRING);
                 cell.setCellValue("FSF actuel:");
                 
-                cell = row1.createCell(5, CellType.STRING);
+                cell = row.createCell(5, CellType.STRING);
                 cell.setCellValue("EasyEtudes result:");
 
-                cell = row1.createCell(6, CellType.STRING);
+                cell = row.createCell(6, CellType.STRING);
                 cell.setCellValue("missing etudes:");
 
-                cell = row1.createCell(7, CellType.STRING);
+                cell = row.createCell(7, CellType.STRING);
                 cell.setCellValue("New found etudes:");
 
             }
@@ -332,8 +332,9 @@ public class Xlsx {
         }
         writeFlux();
     }
-    public void workOnDcd(Docx2 docx){
-        System.out.print(".");
+    public void workOnDcd(List<Docx2> docx2List){
+        for (Docx2 docx : docx2List){
+            System.out.print(".");
         for (Segments docxSegment : docx.getSegList()){
             int index = segmentList.indexOf(docxSegment.getName());
             if (index == -1) {
@@ -374,9 +375,92 @@ public class Xlsx {
 
             }
             }
-        }
+        }}
     }
     public String getReport() {
         return report;
     }
-}
+    public void creatReportSheet(List <Docx2> docx2List){
+        System.out.println(".");
+        XSSFSheet feuille = wb.createSheet("report");
+        Row row = feuille.createRow(0);
+        feuille.addMergedRegion(new CellRangeAddress(0, 0, 0, 1 ));
+                    
+        Cell cell = row.createCell(0, CellType.STRING);
+        cell.setCellValue("EasyEtudes report:");
+        cell.setCellStyle(CelluleStyle.TitleStyle(wb));
+        
+        row = feuille.createRow(1);
+        cell = row.createCell(0, CellType.STRING);
+        cell.setCellValue("Docx filename:");
+
+        cell = row.createCell(1, CellType.STRING);
+        cell.setCellValue("Stat:");
+
+        cell = row.createCell(2, CellType.STRING);
+        cell.setCellValue("Report:");
+
+        cell = row.createCell(3, CellType.STRING);
+        cell.setCellValue("Extract text:");
+
+        cell = row.createCell(4, CellType.STRING);
+        cell.setCellValue("Segment:");
+        
+        cell = row.createCell(5, CellType.STRING);
+        cell.setCellValue("Sous-segment:");
+
+        cell = row.createCell(6, CellType.STRING);
+        cell.setCellValue("Code-Zone:");
+        int low = 2;
+        int hight = 2;
+        int ssLow =2;
+        int sLow = 2;
+        for (Docx2  docx2 : docx2List) {
+            System.out.print(".");
+            if(docx2.getshortName().equals("GRADE")){
+                System.out.println("GRADE");
+            }
+            if (docx2.getSegList().size()>0) {
+                for(Segments segment :docx2.getSegList()){
+                    for (SousSegment ssegment : segment.getSsList()){
+                        for (String varString: ssegment.getDocxVarList()){
+                            row = feuille.createRow(hight);
+                            cell = row.createCell(6, CellType.STRING);
+                            cell.setCellValue(varString);
+                            hight++;
+                        }
+                        if (low<hight-1){feuille.addMergedRegion(new CellRangeAddress(low, hight-1 , 5, 5 ));}
+                        row=feuille.getRow(low);
+                        cell = row.createCell(5, CellType.STRING);
+                        cell.setCellValue(ssegment.getName());
+                        low=hight;
+                    }
+                    if (ssLow<hight-1){feuille.addMergedRegion(new CellRangeAddress(ssLow, hight-1 , 4, 4 ));}
+                    row=feuille.getRow(ssLow);
+                    cell = row.createCell(4, CellType.STRING);
+                    cell.setCellValue(segment.getName());
+                    ssLow=hight;
+                }
+            }else{
+                hight++;
+            }
+            if (sLow<hight-1){
+                feuille.addMergedRegion(new CellRangeAddress(sLow, hight-1 , 0, 0 )); 
+                feuille.addMergedRegion(new CellRangeAddress(sLow, hight-1 , 1, 1 )); 
+                feuille.addMergedRegion(new CellRangeAddress(sLow, hight-1 , 2, 2 )); 
+                feuille.addMergedRegion(new CellRangeAddress(sLow, hight-1 , 3, 3 )); 
+                row=feuille.getRow(sLow);
+            }else{
+                row = feuille.createRow(low);
+            }
+                cell = row.createCell(0, CellType.STRING);
+                cell.setCellValue(docx2.getshortName());
+                cell = row.createCell(1, CellType.STRING);
+                cell.setCellValue(docx2.getStatus());
+                cell = row.createCell(2, CellType.STRING);
+                cell.setCellValue(docx2.getReport());
+                cell = row.createCell(3, CellType.STRING);
+                cell.setCellValue(docx2.getExtractText());
+            sLow = hight; 
+            
+        }}}

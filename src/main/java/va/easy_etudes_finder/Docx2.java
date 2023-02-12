@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,6 +15,7 @@ import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 
 public class Docx2 {
+    private String status="ok";
     private String name, path;
     private String report = "";
     Boolean foundedData = false;
@@ -29,6 +31,9 @@ public class Docx2 {
         this.path = docPath;
         // List <String> celluleExtractData = new ArrayList<>();
         shortNameListIndex.add(this.getshortName());
+        if(this.getshortName().equals("GRADE")){
+            System.out.println("");
+        }
         List <String[]> docxExtractData = new ArrayList<>();
         String pathName = path+name;
         List<String[]> textLineList = extractText(pathName);
@@ -187,8 +192,10 @@ public class Docx2 {
             prvIndex1 = segIndex;
             prvIndex2 = sousSegIndex;
         }
-        if (foundedData) ;
-        else this.report +="\n"+getshortName()+" No such data founded! please check manually";
+        if (foundedData==null) {
+            this.report +="\n"+getshortName()+" No such data founded! please check manually";
+            this.status = "ERROR";
+        }
     }
 
     private List<String[]> extractText(String pathName) {
@@ -200,6 +207,7 @@ public class Docx2 {
         XWPFDocument document = null;
         try{ fis = new FileInputStream(f.getAbsolutePath());}
         catch(Exception e){
+            this.status="ERROR";
             this.report +="\n"+this.getshortName()+": Error while opening the input Sream.";
         }
         if (fis != null) {
@@ -207,6 +215,7 @@ public class Docx2 {
                 ZipSecureFile.setMinInflateRatio(-1.0d);
                 document = new XWPFDocument(fis);
             } catch (Exception e) {
+                this.status="ERROR";
                 this.report +="\n"+this.getshortName()+": Error while reading the file.";
         }}
         if (document != null) {
@@ -244,7 +253,14 @@ public class Docx2 {
         return splitName[0];
 
     }
+    public String getExtractText(){
+        return this.text;
+    }
     public String getReport() {
         return report;
+    }
+
+    public String getStatus() {
+        return this.status;
     }
 }
