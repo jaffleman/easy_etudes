@@ -42,12 +42,9 @@ public class App {
         for (Docx2 docx : docxList) {
             report += docx.getReport();
         }
-        List <String> docx2SegIndexList = Docx2.segListIndex;
-        List <String> shortDocxNameList = Docx2.shortNameListIndex;
+
         System.out.println("\nStart seaching variables...");
-        for (Docx2 docx2 : docxList) {
-            excelFile.workOnDcd(docx2); 
-        }
+        for (Docx2 docx2 : docxList) excelFile.workOnDcd(docx2);
         System.out.println("\nSaving results...");
         excelFile.saveDatatoSheet();
         Date date2 = new Date();
